@@ -1,0 +1,175 @@
+﻿<Window x:Class="Chocorep2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Chocorep2" Height="246" Width="213" Loaded="Window_Loaded" WindowStyle="None" AllowsTransparency="True" BorderBrush="Black" ResizeMode="CanResizeWithGrip" MouseLeave="Window_MouseLeave" MouseEnter="Window_MouseEnter" BorderThickness="0" Closing="Window_Closing" Topmost="True" SizeChanged="Window_SizeChanged" Foreground="White" >
+    <Window.Background>
+        <SolidColorBrush />
+    </Window.Background>
+    <Window.Resources>
+        <Style x:Key="targetrnamestyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="#FF00F7FF"/>
+            <Setter Property="Margin" Value="0,0,0,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BitmapEffect">
+                <Setter.Value>
+                    <DropShadowBitmapEffect/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="playernamestyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="#FF00F7FF"/>
+            <Setter Property="Margin" Value="0,0,0,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BitmapEffect">
+                <Setter.Value>
+                    <DropShadowBitmapEffect/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="targethpstyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="Foreground" Value="#FF00F7FF"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BitmapEffect">
+                <Setter.Value>
+                    <DropShadowBitmapEffect/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="jobstyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="#FF00F7FF"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BitmapEffect">
+                <Setter.Value>
+                    <DropShadowBitmapEffect/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="targethppstyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="#FF00F7FF"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BitmapEffect">
+                <Setter.Value>
+                    <DropShadowBitmapEffect/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="dmgstyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="Foreground" Value="#FF00F7FF"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BitmapEffect">
+                <Setter.Value>
+                    <DropShadowBitmapEffect/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="statusbarstyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Height" Value="23"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BitmapEffect">
+                <Setter.Value>
+                    <DropShadowBitmapEffect/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <DockPanel DockPanel.Dock="Bottom">
+            <TextBlock DockPanel.Dock="Right" Name="TimespanTextBlock" Style="{StaticResource statusbarstyle}" >00:00:00</TextBlock>
+            <TextBlock DockPanel.Dock="Left" Name="StatusTextBlock" Style="{StaticResource statusbarstyle}">welcome</TextBlock>
+        </DockPanel>
+        <Grid Name="grid1" DockPanel.Dock="Top">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Name="playernameCol" Width="50*" MinWidth="20" />
+                <ColumnDefinition Name="jobCol" Width="40" />
+                <ColumnDefinition Name="dmgCol" Width="78*" MinWidth="30"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel HorizontalAlignment="Stretch" Name="NameStackPanel" VerticalAlignment="Stretch" Grid.RowSpan="1" Grid.Row="0">
+                <TextBlock Text="Player Name" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+                <TextBlock Text="" Style="{StaticResource playernamestyle}"/>
+            </StackPanel>
+            <StackPanel HorizontalAlignment="Stretch" Name="JobStatckPanel" VerticalAlignment="Stretch" Grid.Column="1" Grid.RowSpan="1" Grid.Row="0">
+                <TextBlock Text="JOB" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+                <TextBlock Text="" Style="{StaticResource jobstyle}"/>
+            </StackPanel>
+            <StackPanel HorizontalAlignment="Stretch" Name="DmgStackPanel" VerticalAlignment="Stretch" Grid.Column="2" Grid.RowSpan="1" Grid.Row="0">
+                <TextBlock Text="123456 99.99%" Style="{StaticResource dmgstyle}" Width="Auto" />
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+                <TextBlock Text="" Style="{StaticResource dmgstyle}"/>
+            </StackPanel>
+            <Thumb   Opacity="0.01" DragDelta="topthumb_DragDelta" Background="Black" DockPanel.Dock="Top" Grid.ColumnSpan="3" Margin="0,0,0,-23" IsEnabled="True" MouseEnter="Thumb_MouseEnter" Grid.RowSpan="1">
+                <Thumb.ContextMenu>
+                    <ContextMenu >
+                        <MenuItem Header="リセット" Click="ResetButton_Click" />
+                        <MenuItem Name ="TopMostItem" Header="最前面表示" IsCheckable="True" IsChecked="True" Checked="TopMostItem_Checked" Unchecked="TopMostItem_Unchecked" />
+                        <MenuItem Header="解析データをみる" Click="OpenDetailDataForm_Click" />
+                        <MenuItem Name="ViewHitRateItem" Header="命中率表示" IsCheckable="True" IsChecked="True" Checked="ViewHitRate_Checked"  Unchecked="ViewHitRate_Unchecked"/>
+                        <MenuItem Name="ViewTargetInfoItem" IsCheckable="True" IsChecked="True" Header="ターゲット情報表示" Checked="ViewTargetInfoItem_Checked" Unchecked="ViewTargetInfoItem_Unchecked"/>
+                        <MenuItem Name="ViewFocusTargetInfoItem" IsCheckable="True" IsChecked="True" Header="フォーカスターゲット情報表示" Checked="ViewFocusTargetInfoItem_Checked" Unchecked="ViewFocusTargetInfoItem_Unchecked"/>
+                        <MenuItem Header="終了する" Click="CloseButton_Click" />
+                    </ContextMenu>
+                </Thumb.ContextMenu>
+            </Thumb>
+        </Grid>
+    </DockPanel>
+</Window>
