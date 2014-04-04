@@ -108,9 +108,6 @@ namespace PrecisionRep
                 if (myself&&(log.LogType==0x0A||log.LogType==0x0B))
                 {
                     res = AddMyHitDamage(time, dest, num, numrate, crit, entities);
-                    if (res == null)
-                    {
-                    }
                 }
                 else if(ptmember&&(log.LogType==0x12||log.LogType==0x13))
                 {
@@ -122,7 +119,7 @@ namespace PrecisionRep
                 }
                 if (res == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("unable parse:{0}", log.LogBodyReplaceTabCode);
+                    System.Diagnostics.Debug.WriteLine("{0}:{1}", log.LogTypeHexString, log.LogBodyReplaceTabCode);
                 }
                 TuikaDmgPerson = null;
                 return;
@@ -241,16 +238,16 @@ namespace PrecisionRep
                 {//範囲攻撃なら対象となる敵をピックアップ
                     Entity currenttarget = Helper.FindEntityByID(src_ent.TargetId,entities);
                     float x, y, z;
-                    if((currenttarget==null||selfae.Count(obj=>obj==action)==0))
+                    if((currenttarget==null||selfae.Count(obj=>obj==action)>0))
                     {
-                        x=currenttarget.X;
-                        y=currenttarget.Y;
-                        z=currenttarget.Z;
+                        x = src_ent.X;
+                        y = src_ent.Y;
+                        z = src_ent.Z;
                     }
                     else{
-                        x=src_ent.X;
-                        y=src_ent.Y;
-                        z=src_ent.Z;
+                        x = currenttarget.X;
+                        y = currenttarget.Y;
+                        z = currenttarget.Z;
                     }
                     person.DestEntList.Clear();
                     float range = 5;
@@ -331,7 +328,7 @@ namespace PrecisionRep
                 TuikaDmgPerson = null;
                 return adddmg;
             }
-            foreach (DDPerson person in ddpersonList.Where(obj => obj.lastDDAction != null))
+            foreach (DDPerson person in ddpersonList.Where(obj => obj.lastDDAction != null &&obj.PersonType== PersonType.PTMember))
             {
                 ActionDone[] dones = person.GetActionDones();
                 if (dones[dones.Length - 1].timestamp.AddSeconds(1) < time)
@@ -339,9 +336,20 @@ namespace PrecisionRep
                     person.lastDDAction = null;
                     continue;
                 }
+                if (dmgrate > 0)
+                {//ダメージRATEが0以上（条件で威力が変化するアクションのみ）
+                    if (person.lastDDAction.PowerMax == person.lastDDAction.PowerMin)
+                    {
+                        continue;
+                    }
+                }
+                if (person.lastDDAction.Area && person.DestEntList.Count(obj => obj.Name == dest) == 0)
+                {//範囲で対象の名前のもぶがない場合
+                    continue;
+                }
                 personlist.Add(person);
             }
-            //ソート
+            //ソートsssss
             personlist.Sort(delegate(DDPerson a, DDPerson b) { return a.lastDDAction.Area.CompareTo(b.lastDDAction.Area); });
 
             if (personlist.Count == 0)
@@ -373,7 +381,6 @@ namespace PrecisionRep
                     foreach (Entity _ent in person.DestEntList.Where(obj => obj.Name == dest))
                     {
                         destEnt = _ent;
-                        person.DestEntList.Remove(destEnt);
                         break;
                     }
                 }
@@ -396,6 +403,7 @@ namespace PrecisionRep
             }
             else
             {//複数
+                System.Diagnostics.Debug.WriteLine("In 複数");
                 double minZure = double.MaxValue;
                 DDPerson person = null;
                 Entity srcEnt = null;
@@ -420,31 +428,37 @@ namespace PrecisionRep
                             _destEnt = Helper.FindEntityByName(dest, entities);
                         }
                     }
-                    if (_destEnt == null) continue;
-
+                    if (_destEnt == null)
+                    {
+                        continue;
+                    }
                     float dmgbase = p.CalcDamageBase();
                     ActionDD dd = new ActionDD(time, p.lastDDAction.ActionName, _destEnt, _srcEnt, dmg, dmgrate, crit);
                     float critrate = crit ? 1.5F : 1.0F;
                     float buffeffect = dd.GetBuffsEffectRate();
-                    float _dmg = critrate * p.lastDDAction.PowerMin * dmgbase * buffeffect;
+                    float _dmg = critrate * (dmgrate>0?p.lastDDAction.PowerMax:p.lastDDAction.PowerMin) * dmgbase * buffeffect;
                     float zure = Math.Abs(dmg - _dmg) / _dmg;
-
+                    System.Diagnostics.Debug.WriteLine("{0}「{1}」dmg{2} _dmg{3} zure{4}", p.Name, p.lastDDAction.ActionName, dmg, _dmg, zure);
                     if (zure < minZure)
                     {
                         minZure = zure;
                         person = p;
                         destEnt = _destEnt;
                         srcEnt = _srcEnt;
-                        if (zure < 0.2) break;
+                        if (zure < 0.06)
+                        {
+                            System.Diagnostics.Debug.WriteLine("ズレ 6%未満にて確定");
+                            break;
+                        }
                     }
                 }
                 if (person == null)
                 {
-                    Console.WriteLine("エラー");
+                    Console.WriteLine("in AddPTMEmberHitDamage srcを確定できませんでした。⇒{0}に{1}ダメージ",dest,dmg);
                     return null;
                 }
                 if (person.lastDDAction.Area)
-                {
+                {//b
                     person.DestEntList.Remove(destEnt);
                 }
                 if (destEnt == null) return null;
@@ -476,7 +490,8 @@ namespace PrecisionRep
             personlist.Sort(delegate(DDPerson a, DDPerson b) { return a.lastDDAction.Area.CompareTo(b.lastDDAction.Area); });
             if (personlist.Count == 0)
             {//ない
-                Console.WriteLine("ミスした対象がありません。エラー");
+                System.Diagnostics.Debug.WriteLine("ミスした対象がありません。");
+                System.Diagnostics.Debug.WriteLine("  PTMEMBER ⇒ {0}にミス",dest);
                 return null;
             }
             else if (personlist.Count == 1)
@@ -490,7 +505,6 @@ namespace PrecisionRep
                     foreach (Entity _ent in person.DestEntList.Where(obj => obj.Name == dest))
                     {
                         destEnt = _ent;
-                        person.DestEntList.Remove(destEnt);
                         break;
                     }
                 }
@@ -559,7 +573,7 @@ namespace PrecisionRep
                     return null;
                 }
                 if (person.lastDDAction.Area)
-                {
+                {//a
                     person.DestEntList.Remove(destEnt);
                 }
                 ActionMiss actionmiss = person.AddActioMiss(time, destEnt, srcEnt,person.lastDDAction==null?"":person.lastDDAction.ActionName, ineffective);

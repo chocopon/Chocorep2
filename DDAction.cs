@@ -64,7 +64,7 @@ namespace PrecisionRep
             list.Add(new DDAction(23, "サークル・オブ・ドゥーム", 100, 100, true, 1, 19));
             list.Add(new DDAction(24, "シールドロブ", 120, 120, false, 1, 19));
             list.Add(new DDAction(25, "シールドスワイプ", 210, 210, false, 1, 19));
-            list.Add(new DDAction(29, "スピリッツウィズイン", 300, 100, false, 19));
+            list.Add(new DDAction(29, "スピリッツウィズイン", 300, 300, false, 19));
             //斧･戦士
             list.Add(new DDAction(31, "ヘヴィスウィング", 150, 150, false, 3, 21));
             list.Add(new DDAction(33, "フラクチャー", 100, 100, false, 1, 2, 3, 5, 19, 20, 21));
