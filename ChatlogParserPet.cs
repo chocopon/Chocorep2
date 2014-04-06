@@ -14,8 +14,9 @@ namespace PrecisionRep
         /// </summary>
         /// <param name="src"></param>
         /// <param name="action"></param>
-        private object AddPetHitDamage(DateTime time, string dest, int dmg, int dmgrate, bool crit, Entity[] entities)
+        private object AddPetHitDamage(DateTime time, string dest, int dmg, int dmgrate, bool crit, EntitiesSnap[] entitisnaps)
         {
+            Entity[] entities = GetEntitiesFromSnaps(entitisnaps, time, DefaultSpan);
             List<DDPerson> personlist = new List<DDPerson>();
             foreach (DDPerson person in ddpersonList.Where(obj => obj.lastDDAction != null && obj.PersonType == PersonType.Pet))
             {
@@ -31,8 +32,6 @@ namespace PrecisionRep
                 }
                 personlist.Add(person);
             }
-            //ソート
-            personlist.Sort(delegate(DDPerson a, DDPerson b) { return a.lastDDAction.Area.CompareTo(b.lastDDAction.Area); });
 
             if (personlist.Count == 0)
             {//ない

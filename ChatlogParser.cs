@@ -13,6 +13,7 @@ namespace PrecisionRep
         Regex srcRegex = new Regex(@"(\w.+?)の");
         Regex numRegex = new Regex(@"(?<num>\d+)ダメージ|(?<num>\d+)\((?<rate>[+-]\d+)%\)ダメージ");
         Regex actionRegex = new Regex(@"「(.+)」");
+        TimeSpan DefaultSpan = new TimeSpan(0, 0, 0, 0, 600);
 
         List<DDPerson> ddpersonList;
         DDPerson TuikaDmgPerson;
@@ -32,7 +33,7 @@ namespace PrecisionRep
             }
         }
 
-        public void Parse(DateTime time, FFXIVLog log, Entity[] entities, out object res)
+        public void Parse(DateTime time, FFXIVLog log, EntitiesSnap[] entitysnaps, out object res)
         {
             res = null;
             //自分のログか
@@ -47,6 +48,9 @@ namespace PrecisionRep
                 TuikaDmgPerson = null;
                 return;
             }
+
+            Entity[] entities = GetEntitiesFromSnaps(entitysnaps,time,DefaultSpan);
+
             #region パーシング
             string logbody = log.LogBodyReplaceTabCode;
             Match srcMatch = srcRegex.Match(logbody);
@@ -107,15 +111,16 @@ namespace PrecisionRep
 
                 if (myself&&(log.LogType==0x0A||log.LogType==0x0B))
                 {
-                    res = AddMyHitDamage(time, dest, num, numrate, crit, entities);
+                    res = AddMyHitDamage(time, dest, num, numrate, crit, entitysnaps);
+                    //res = AddPTMemberHitDamage(time, dest, num, numrate, crit, entitysnaps);//検証用
                 }
                 else if(ptmember&&(log.LogType==0x12||log.LogType==0x13))
                 {
-                    res = AddPTMemberHitDamage(time, dest, num, numrate, crit, entities);
+                    res = AddPTMemberHitDamage(time, dest, num, numrate, crit, entitysnaps);
                 }
                 else if (pets)
                 {
-                    res = AddPetHitDamage(time, dest, num, numrate, crit, entities);
+                    res = AddPetHitDamage(time, dest, num, numrate, crit, entitysnaps);
                 }
                 if (res == null)
                 {
@@ -264,8 +269,9 @@ namespace PrecisionRep
         /// </summary>
         /// <param name="src"></param>
         /// <param name="action"></param>
-        private object AddMyHitDamage(DateTime time, string dest, int dmg, int dmgrate, bool crit, Entity[] entities)
+        private object AddMyHitDamage(DateTime time, string dest, int dmg, int dmgrate, bool crit, EntitiesSnap[] entitysnaps)
         {
+           Entity[] entities = GetEntitiesFromSnaps(entitysnaps, time, DefaultSpan);
             Entity srcEnt = Helper.FindEntityByName(MySelf.Name, entities);
             if (srcEnt == null) return null;
 
@@ -279,6 +285,13 @@ namespace PrecisionRep
 
             if (MySelf.lastDDAction != null)
             {
+                string action = MySelf.lastDDAction.ActionName;
+                if (action == "ファイア" || action == "ファイラ" || action == "ファイガ" || action == "フレア" ||
+                    action == "ブリザド" || action == "ブリザラ" || action == "ブリザガ" || action == "フリーズ")
+                {//1.8秒
+                    entities = GetEntitiesFromSnaps(entitysnaps, time, new TimeSpan(0, 0, 0, 1, 800));
+                    srcEnt = Helper.FindEntityByName(MySelf.Name, entities);
+                }
                 Entity destEnt = Helper.FindEntityByID(srcEnt.TargetId, entities);
                 if (destEnt == null)
                 {
@@ -313,9 +326,11 @@ namespace PrecisionRep
         /// </summary>
         /// <param name="src"></param>
         /// <param name="action"></param>
-        private object AddPTMemberHitDamage(DateTime time, string dest, int dmg, int dmgrate, bool crit, Entity[] entities)
+        private object AddPTMemberHitDamage(DateTime time, string dest, int dmg, int dmgrate, bool crit,EntitiesSnap[] entitysnaps)
         {
             List<DDPerson> personlist = new List<DDPerson>();
+            Entity[] entities = GetEntitiesFromSnaps(entitysnaps, time,DefaultSpan);
+
             if (TuikaDmgPerson != null)
             {//忠義の剣
                 Entity srcEnt = Helper.FindEntityByName(TuikaDmgPerson.Name, entities);
@@ -343,10 +358,10 @@ namespace PrecisionRep
                         continue;
                     }
                 }
-                if (person.lastDDAction.Area && person.DestEntList.Count(obj => obj.Name == dest) == 0)
-                {//範囲で対象の名前のもぶがない場合
-                    continue;
-                }
+                //if (person.lastDDAction.Area && person.DestEntList.Count(obj => obj.Name == dest) == 0)
+                //{//範囲で対象の名前のもぶがない場合
+                //    continue;
+                //}
                 personlist.Add(person);
             }
             //ソートsssss
@@ -372,16 +387,27 @@ namespace PrecisionRep
             else if (personlist.Count == 1)
             {//ひとり
                 DDPerson person = personlist[0];
+                string action = person.lastDDAction.ActionName;
+                if (action == "ファイア" || action == "ファイラ" || action == "ファイガ" || action == "フレア" ||
+                    action == "ブリザド" || action == "ブリザラ" || action == "ブリザガ" || action == "フリーズ")
+                {//1.8秒
+                    entities = GetEntitiesFromSnaps(entitysnaps, time, new TimeSpan(0, 0, 0, 1, 800));
+                }
+
                 Entity srcEnt = Helper.FindEntityByName(person.Name, entities);
                 Entity destEnt = null;
 
                 if (person.lastDDAction.Area)
                 {
-
                     foreach (Entity _ent in person.DestEntList.Where(obj => obj.Name == dest))
                     {
                         destEnt = _ent;
                         break;
+                    }
+                    if (destEnt == null)
+                    {//範囲内のモブ取得ミスというか少しのずれはあるかも
+                        System.Diagnostics.Debug.WriteLine("範囲攻撃の対象モブを使い切っています。名前から取得します。");
+                        destEnt = Helper.FindEntityByName(dest, entities);
                     }
                 }
                 else
@@ -403,65 +429,124 @@ namespace PrecisionRep
             }
             else
             {//複数
+
                 System.Diagnostics.Debug.WriteLine("In 複数");
-                double minZure = double.MaxValue;
                 DDPerson person = null;
                 Entity srcEnt = null;
                 Entity destEnt = null;
-                foreach (DDPerson p in personlist)
+                //それぞれのダメージ予測を計算する
+                List<object[]> dmgsetlist = new List<object[]>();
+
+                foreach (DDPerson _person in personlist)
                 {
-                    Entity _srcEnt = Helper.FindEntityByName(p.Name, entities);
+                    string action = _person.lastDDAction.ActionName;
+                    if (action == "ファイア" || action == "ファイラ" || action == "ファイガ" || action == "フレア" ||
+                        action == "ブリザド" || action == "ブリザラ" || action == "ブリザガ" || action == "フリーズ")
+                    {//1.8秒
+                        entities = GetEntitiesFromSnaps(entitysnaps, time, new TimeSpan(0, 0, 0, 1, 800));
+                    }
+                    Entity _srcEnt = Helper.FindEntityByName(_person.Name, entities);
 
                     Entity _destEnt = null;
-                    if (p.lastDDAction.Area)
+
+                    float? predmg = null;
+                    if (_person.lastDDAction.Area)
                     {
-                        foreach (Entity _ent in p.DestEntList.Where(obj => obj.Name == dest))
+                        foreach (Entity _ent in _person.DestEntList.Where(obj => obj.Name == dest))
                         {
                             _destEnt = _ent;
+                        }
+                        //この範囲攻撃で与えたダメージを取得する
+                        foreach (ActionDD _dd in _person.GetActionDDs().Where(obj => obj.actionName == _person.lastDDAction.ActionName && obj.timestamp >= time.AddSeconds(-1)))
+                        {
+                            System.Diagnostics.Debug.WriteLine("既存範囲攻撃ダメージあり {0} {1} > {2} {3}", _person.Name, _dd.actionName, _dd.Dest.Name,_dd.damage);
+                            predmg = _dd.damage/(_dd.IsCritical?1.5F:1);
                         }
                     }
                     else
                     {
                         _destEnt = Helper.FindEntityByID(_srcEnt.TargetId, entities);
-                        if (_destEnt == null)
-                        {
-                            _destEnt = Helper.FindEntityByName(dest, entities);
-                        }
                     }
                     if (_destEnt == null)
                     {
-                        continue;
+                        _destEnt = Helper.FindEntityByName(dest, entities);
                     }
-                    float dmgbase = p.CalcDamageBase();
-                    ActionDD dd = new ActionDD(time, p.lastDDAction.ActionName, _destEnt, _srcEnt, dmg, dmgrate, crit);
-                    float critrate = crit ? 1.5F : 1.0F;
-                    float buffeffect = dd.GetBuffsEffectRate();
-                    float _dmg = critrate * (dmgrate>0?p.lastDDAction.PowerMax:p.lastDDAction.PowerMin) * dmgbase * buffeffect;
-                    float zure = Math.Abs(dmg - _dmg) / _dmg;
-                    System.Diagnostics.Debug.WriteLine("{0}「{1}」dmg{2} _dmg{3} zure{4}", p.Name, p.lastDDAction.ActionName, dmg, _dmg, zure);
-                    if (zure < minZure)
+                    float _dmg = 0;
+                    if (predmg != null)
+                    {  //この範囲攻撃で与えた既存ダメージ
+                        _dmg = (float)((crit?1.5F:1)* predmg);
+                    }
+                    else
                     {
-                        minZure = zure;
-                        person = p;
-                        destEnt = _destEnt;
-                        srcEnt = _srcEnt;
-                        if (zure < 0.06)
+                        //予測ダメージ
+                        float dmgbase = _person.CalcDamageBase();
+                        ActionDD dd = new ActionDD(time, _person.lastDDAction.ActionName, _destEnt, _srcEnt, dmg, dmgrate, crit);
+                        float critrate = crit ? 1.5F : 1.0F;
+                        float buffeffect = dd.GetBuffsEffectRate();
+                        _dmg = critrate * (dmgrate > 0 ? _person.lastDDAction.PowerMax : _person.lastDDAction.PowerMin) * dmgbase * buffeffect;
+                    }
+                    float zure = Math.Abs(dmg - _dmg) / _dmg;
+                    System.Diagnostics.Debug.WriteLine("{0}「{1}」dmg{2} _dmg{3} zure{4}", _person.Name, _person.lastDDAction.ActionName, dmg, _dmg, zure);
+                    dmgsetlist.Add(new object[] { _person, _dmg ,zure,_srcEnt,_destEnt});
+                }
+                //誤差が許容範囲のもの
+                List<object[]> allowreslist = new List<object[]>();
+                //誤差が最少のもの
+                object[] minres = null;
+                float minzure = float.MaxValue;
+                foreach (object[] res in dmgsetlist)
+                {
+                    float zure = (float)res[2];
+                    if (zure< 0.06)
+                    {
+                        allowreslist.Add(res);
+                    }
+                    if (zure < minzure)
+                    {
+                        minres = res;
+                        minzure = zure;
+                    }
+                }
+                if (allowreslist.Count > 0)
+                {//許容範囲のが2つ以上
+                    System.Diagnostics.Debug.WriteLine("許容範囲が{0}個", allowreslist.Count);
+                    foreach (object[] res in allowreslist)
+                    {
+                        person = (DDPerson)res[0];
+                        destEnt = (Entity)res[4];
+                        srcEnt = (Entity)res[3];
+                        if (person.lastDDAction.Area)
                         {
-                            System.Diagnostics.Debug.WriteLine("ズレ 6%未満にて確定");
+                            if (person.DestEntList.Count(obj => obj.Name == dest) > 0)
+                            {//採用
+                                System.Diagnostics.Debug.WriteLine("範囲攻撃で対象が残っているものを採用");
+                                break;
+                            }
+                        }
+                        else
+                        {//単体攻撃を採用
+                            System.Diagnostics.Debug.WriteLine("単体攻撃を採用");
                             break;
                         }
                     }
                 }
-                if (person == null)
-                {
-                    Console.WriteLine("in AddPTMEmberHitDamage srcを確定できませんでした。⇒{0}に{1}ダメージ",dest,dmg);
-                    return null;
+                else
+                {//許容範囲の攻撃がないか１つ
+                    System.Diagnostics.Debug.WriteLine("許容範囲の攻撃がないか１つなので誤差最小を採用");
+                    person =(DDPerson) minres[0];
+                    destEnt =(Entity) minres[4];
+                    srcEnt = (Entity)minres[3];
                 }
+
                 if (person.lastDDAction.Area)
-                {//b
+                {//範囲処理の後処理
                     person.DestEntList.Remove(destEnt);
                 }
-                if (destEnt == null) return null;
+                if (destEnt == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("対象のEntityがnull");
+                    return null;
+                }
                 ActionDD actiondd = person.AddActionDD(time, person.lastDDAction.ActionName, destEnt, srcEnt, dmg, dmgrate, crit);
                 if (!person.lastDDAction.Area)
                 {
@@ -537,7 +622,6 @@ namespace PrecisionRep
                     Entity _destEnt = null;
                     if (p.lastDDAction.Area)
                     {
-
                         foreach (Entity _ent in p.DestEntList.Where(obj => obj.Name == dest))
                         {
                             _destEnt = _ent;
@@ -627,6 +711,29 @@ namespace PrecisionRep
             }
             return miss;
         }
+
+#region Helper Functions
+        private  Entity[] GetEntitiesFromSnaps(EntitiesSnap[] entitysnaps, DateTime time, TimeSpan span)
+        {
+            EntitiesSnap entsnap = entitysnaps[0];
+            //for (int i = 0; i < entitysnaps.Length; i++)
+            //{
+            //    System.Diagnostics.Debug.WriteLine(entitysnaps[i].timestamp.ToString("o"));
+            //}
+
+           // System.Diagnostics.Debug.WriteLine("{0}", (time - entsnap.timestamp).TotalMilliseconds);
+
+            for (int i = 0; i < entitysnaps.Length; i++)
+            {
+                if (entitysnaps[i].timestamp.Add(span) < time)
+                {
+                    entsnap = entitysnaps[i];
+                    break;
+                }
+            }
+            return entsnap.Entities;
+        }
+#endregion
 
         string[] selfae = new string[] { "ホーリー", "サークル・オブ・ドゥーム", "シュトルムヴィント", "リング・オブ・ソーン","ブリザラ"};
     }

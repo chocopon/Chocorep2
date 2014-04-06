@@ -81,6 +81,12 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChoiceProcForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ChoiceProcForm.Designer.cs">
+      <DependentUpon>ChoiceProcForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="TargetInfoWindow.xaml.cs">
       <DependentUpon>TargetInfoWindow.xaml</DependentUpon>
     </Compile>
@@ -158,6 +164,9 @@
     </Compile>
     <EmbeddedResource Include="AboutBox1.resx">
       <DependentUpon>AboutBox1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ChoiceProcForm.resx">
+      <DependentUpon>ChoiceProcForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ParsingReportForm.resx">
       <DependentUpon>ParsingReportForm.cs</DependentUpon>

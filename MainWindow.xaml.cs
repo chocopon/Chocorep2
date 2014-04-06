@@ -16,6 +16,7 @@ using System.ComponentModel;
 using PrecisionRep;
 using System.Windows.Threading;
 using ffxivlib;
+using System.Diagnostics;
 
 namespace Chocorep2
 {
@@ -46,6 +47,9 @@ namespace Chocorep2
         private TargetInfoWindow targetInfoWindow = new TargetInfoWindow();
         private TargetInfoWindow focusTargetInfoWindow = new TargetInfoWindow();
 
+        private int ChoisedProcessID = 0;
+
+
         public MainWindow()
         {
             InitializeComponent();
@@ -61,6 +65,12 @@ namespace Chocorep2
             timer.Interval = new TimeSpan(0, 0, 0, 1);
             timer.Tick += new EventHandler(timer_Tick);
             #region 設定読み込み
+            if (Properties.Settings.Default.IsUpgrade==false)
+            {
+                Properties.Settings.Default.Upgrade();
+                Properties.Settings.Default.IsUpgrade = true;
+                Properties.Settings.Default.Save();
+            }
             if (Properties.Settings.Default.MainWindowSize.Height > 0)
             {
                 this.Left = Properties.Settings.Default.MainWindowLocation.X;
@@ -138,9 +148,8 @@ namespace Chocorep2
                 while (!backgroundWorker.CancellationPending && !cancel)
                 {
                     DateTime now = DateTime.Now;
-                    UpdateRep();
-
                     EntitySnapList.Insert(0, new EntitiesSnap(now, GetEntities()));
+                    UpdateRep();
                     for (int i = EntitySnapList.Count - 1; i > 0; i--)
                     {
                         if (EntitySnapList[i].timestamp.AddSeconds(3) < now)
@@ -168,7 +177,36 @@ namespace Chocorep2
         {
             try
             {
-                lib = new FFXIVLIB();
+                if (ChoisedProcessID > 0)
+                {
+                    lib = new FFXIVLIB(ChoisedProcessID);
+                }
+                else
+                {
+                    Process[] ffxivprocs = Process.GetProcessesByName("ffxiv");
+                    if (ffxivprocs.Length == 1)
+                    {
+                        lib = new FFXIVLIB();
+                    }
+                    else if (ffxivprocs.Length > 1)
+                    {
+
+                        ChoiceProcForm choicefrm = new ChoiceProcForm();
+                        if (choicefrm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            lib = new FFXIVLIB(choicefrm.SelectedFFXIVProcessID);
+                            ChoisedProcessID = choicefrm.SelectedFFXIVProcessID;
+                        }
+                        else
+                        {
+                            this.Close();
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
                 chatlog = lib.GetChatlog();
                 RepPersonList.Clear();
                 Entities = GetEntities();
@@ -216,6 +254,7 @@ namespace Chocorep2
             }
             catch(Exception _e)
             {
+                ChoisedProcessID = 0;
                 MessageBox.Show("Chocorepの起動に失敗しました。"+ _e.Message);
                 return false;
             }
@@ -227,6 +266,13 @@ namespace Chocorep2
         private void UpdateRep()
         {
             DateTime time = DateTime.Now;
+            //ログは遅れるので
+            Entities = GetEntities();
+            foreach (RepPerson person in RepPersonList)
+            {
+                person.UpdateBuff(time, Entities);
+            }
+
             if (chatlog.IsNewLine())
             {
                 foreach (Chatlog.Entry ent in chatlog.GetChatLogLines())
@@ -260,18 +306,9 @@ namespace Chocorep2
                         row.LogType = "others";
                     }
 
-                    EntitiesSnap entsnap = EntitySnapList[0];
-                    for (int i = 1; i < EntitySnapList.Count; i++)
-                    {
-                        if (EntitySnapList[i].timestamp.AddSeconds(1.0) < time)
-                        {
-                            entsnap = EntitySnapList[i];
-                            break;
-                        }
-                    }
                     try
                     {
-                        chatlogparser.Parse(time, log, entsnap.Entities, out res);
+                        chatlogparser.Parse(time, log,EntitySnapList.ToArray(), out res);
                         if (res != null)
                         {
                             Parsing(res, row);
@@ -285,12 +322,6 @@ namespace Chocorep2
                 }
             }
 
-            //ログは遅れるので
-            Entities = GetEntities();
-            foreach (RepPerson person in RepPersonList)
-            {
-                person.UpdateBuff(time, Entities);
-            }
         }
 
         private void Parsing(object res, PreciRepDataSet.ParsingReportRow row)
@@ -362,6 +393,9 @@ namespace Chocorep2
                 foreach (BUFF b in src.Buffs.Where(obj => obj.BuffID > 0))
                 {
                     string buffname = ResourceParser.GetBuffName(b.BuffID);
+                    if (String.IsNullOrEmpty(buffname))
+                        buffname = b.BuffID.ToString();
+
                     sb.AppendFormat("{0},", buffname);
                 }
                 row.SrcBuffs = sb.ToString().TrimEnd(new char[] { ',' });
@@ -455,6 +489,17 @@ namespace Chocorep2
                     focusTargetInfoWindow.TargetHPP = "";
                     focusTargetInfoWindow.TargetHP = "";
                 }
+
+                //TOPMOST処理
+                if (targetInfoWindow.IsVisible)
+                {
+                    targetInfoWindow.Topmost = true;
+                }
+                if (focusTargetInfoWindow.IsVisible)
+                {
+                    focusTargetInfoWindow.Topmost = true;
+                }
+
                 //データ更新
                 for (int i = 0; i < RepPersonList.Count; i++)
                 {
@@ -542,6 +587,7 @@ namespace Chocorep2
             timer.Stop();
             DateTime time = DateTime.Now;
             UpdateMainWindow(time);
+            this.Topmost = TopMostItem.IsChecked;
             timer.Start();
         }
 
